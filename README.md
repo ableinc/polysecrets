@@ -40,6 +40,24 @@ secret = PolySecrets('rAnd0m_s3cr3t').manual()
 print(secret)  # confirm secret is available
 ```
 
+# CLI
+You can use Polysecrets as a command line tool as such: <br />
+```bash
+polysecrets -s rAnd0m_s3cr3t
+```
+
+```bash 
+Usage: polysecrets [OPTIONS]
+
+Options:
+  -s, --secret TEXT       The secret string  [required]
+  -a, --automate BOOLEAN  Automate the secret generation process. This adds to
+                          secret to your environment under "secret"
+  -t, --time INTEGER      Number of seconds until new secret is created.
+  --version               Show the version and exit.
+  --help                  Show this message and exit.
+```
+
 # Benefits
 * JSON Web Tokens
 * Certificate Signing
