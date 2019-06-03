@@ -18,7 +18,7 @@ setuptools.setup(
     packages=['polysecrets'],
     entry_points='''
         [console_scripts]
-        polysecrets=polysecrets.cli:polysecrets
+        polysecrets=polysecrets.cli:cli
     ''',
     install_requires=[
           'Click>=7.0'

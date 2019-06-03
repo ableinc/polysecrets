@@ -10,6 +10,15 @@ different from a secret produced at 8:01pm, on the same server.
 * Python 3.6+
 * Windows, OSX or Linux
 
+# Install
+```bash
+git clone https://github.com/ableinc/polysecrets.git
+cd polysecrets
+
+python3.6 -m pip install --upgrade .
+            or 
+pip3.6 install --upgrade .
+```
 # How To Use
 Polysecrets can be used manually or automated. Automated use can be provided a time (in seconds) for
 how often a new secret should be generated, the default time is set to 30 seconds. <br />
