@@ -52,9 +52,9 @@ class PolySecrets:
     @staticmethod
     def __os__():
         platforms = {
-            'darwin': (3, 6),
-            'linux': (3, 6),
-            'windows': (3, 6)
+            'darwin': (3, 5),
+            'linux': (3, 5),
+            'windows': (3, 5)
         }
         platform_version = platforms.get(sys.platform, 'N/A')
         if platform_version == 'N/A' or not sys.version_info >= platform_version:

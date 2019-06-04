@@ -7,7 +7,7 @@ breach, Polysecrets, randomizes the provided string in a way that a secret produ
 different from a secret produced at 8:01pm, on the same server.
 
 # Requirements
-* Python 3.6+
+* Python 3.5+
 * Windows, OSX or Linux
 
 # Install
