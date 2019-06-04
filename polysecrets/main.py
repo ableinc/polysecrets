@@ -58,7 +58,7 @@ class PolySecrets:
         }
         platform_version = platforms.get(sys.platform, 'N/A')
         if platform_version == 'N/A' or not sys.version_info >= platform_version:
-            print('MacOS, Linux or Windows running Python 3.6 or higher is required.')
+            print('MacOS, Linux or Windows running Python 3.5 or higher is required.')
             return
 
     @staticmethod

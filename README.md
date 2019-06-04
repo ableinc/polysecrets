@@ -1,5 +1,5 @@
 # Polysecrets
-
+![alt text](https://img.icons8.com/dotty/80/000000/mesh.png "Polysecrets Logo")
 A completely randomized order of secrets; built with security in mind. Secrets can be automatically generated
 on a time interval or manually generated. Polysecrets keeps the guessing away from the human in exchange for
 a truly secret, randomized signing order. Instead of a hardcoded secret that can be stolen during a security
