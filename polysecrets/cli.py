@@ -16,9 +16,15 @@ def cli(secret, length, uuid, mixcase):
     if not isinstance(uuid, int):
         print(f'UUID must be a integer of 0, 1, or 2. You have {uuid}, which is invalid.')
         sys.exit()
-    else:
-        print('Secret: ', PolySecrets(secret, length=length, uuids=uuid, mix_case=mixcase).manual())
-        sys.exit()
+
+    config = dict(
+        secret=secret,
+        length=length,
+        uuids=uuid,
+        mixcase=mixcase
+    )
+    print('Secret: ', PolySecrets(config).manual())
+    sys.exit()
 
 
 if __name__ == '__main__':
