@@ -37,7 +37,18 @@ Automated (this will add the secret to your environment)
 from os import environ
 from polysecrets import PolySecrets
 
-PolySecrets('rAnd0m_s3cr3t', 15).automated()  # default time is set to 30 seconds
+
+config = dict(
+        secret='rAnd0m_s3cr3t',  # default
+        length=10,  # default
+        interval=30,  # default (only if you're using automated)
+        uuid=True,  # default
+        mixcase=False,  # default
+        persist={}  # default
+    )
+
+
+PolySecrets(config).automated()  # default time is set to 30 seconds
 print(environ['secret'])  # confirm secret is available
 ```
 
@@ -45,7 +56,17 @@ Manual:
 ```python
 from polysecrets import PolySecrets
 
-secret = PolySecrets('rAnd0m_s3cr3t').manual()
+config = dict(
+        secret='rAnd0m_s3cr3t',  # default
+        length=10,  # default
+        interval=30,  # default (only if you're using automated)
+        uuid=True,  # default
+        mixcase=False,  # default
+        persist={}  # default
+    )
+
+
+secret = PolySecrets(config).manual()
 print(secret)  # confirm secret is available
 ```
 
@@ -64,7 +85,7 @@ The CLI (below) has full details of each option (except automated option)
 # CLI
 You can use Polysecrets as a command line tool. CLI does not provided automated feature. <br />
 ```bash
-polysecrets -s rAnd0m_s3cr3t
+polysecrets -s -l 20 
 ```
 
 ```bash 
@@ -78,6 +99,7 @@ Options:
                           secret generation
   -m, --mixcase BOOLEAN   Decide whether or not to mix the case of
                           alphacharacters in secret string
+  -p, --persist           Never get the same secret twice with persistence from MongoDB
   --version               Show the version and exit.
   --help                  Show this message and exit.
 
@@ -115,3 +137,9 @@ ________
 secret string you provided will not contain all the characters provided. If you want the final
 secret to contain all the exact same characters, then provide the exact string length to 
 Polysecrets 'length' field.
+
+- The secret provided in the config is just used as reference characters and are not
+guaranteed to be a part of the final secret. If you would like to use the secret you
+provide I would recommend going the traditional route; add secret to your project 
+.env file and use Able's <a href="https://github.com/ableinc/pydotenvs">Py.Envs</a>
+python library.

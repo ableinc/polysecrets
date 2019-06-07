@@ -10,7 +10,13 @@ def automated_example():
     Alphanumeric characters with varying cases and a final output secret length of 20 characters
     :return:
     """
-    automated = PolySecrets('rAnd0m_s3cr3t', interval=5, length=20, uuids=0, mix_case=True)  # default uuids is 1 (True)
+    config = dict(
+        length=20,
+        interval=5,
+        uuid=False,
+        mixcase=True
+    )
+    automated = PolySecrets(config)
     try:
         automated.automated()
         time.sleep(2)  # give environment time to setup
@@ -28,7 +34,12 @@ def manual_example():
     Alphanumeric characters & UUIDs, with varying cases and a final output secret length of 20 characters
     :return:
     """
-    secret = PolySecrets('rAnd0m_s3cr3t', length=20, uuids=2, mix_case=True).manual()  # default uuids is 1 (True)
+    config = dict(
+        length=20,
+        uuid='Both',
+        mixcase=True
+    )
+    secret = PolySecrets(config).manual()
     print('Manual - Secret: ', secret, f' | Length: {len(secret)}')  # confirm secret is available
 
 

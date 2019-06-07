@@ -5,23 +5,14 @@ from pymongo import MongoClient
 
 
 class PolySecrets:
-    def __init__(self, config: dict, interval: int = 30):
+    def __init__(self, config: dict):
         """
         A completely randomized order of secrets; built with security in mind.
         :param config: Configuration object
         """
         self.__os__()
-        self.__reqs__(config['secret'], config['length'])
         # variables
-        _config = dict(
-            secret=config['secret'],
-            interval=interval,
-            length=config['length'],
-            uuids=config['uuids'],
-            mix_case=config['mixcase'],
-            persist=config['persist']
-        )
-        self.config = self.__config__(_config)
+        self.config = self.__config__(config)
         # automated process
         self._thread = threading.Thread(target=self.__automated, args=())
         self._thread.daemon = True
@@ -31,22 +22,37 @@ class PolySecrets:
         self._alpha_numeric_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
                                     'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6',
                                     '7', '8', '9']
-        self._sec_phrase = config['secret']
+        self._sec_phrase = self.config['secret']
         self._sec_arr = []
         atexit.register(environ.clear)
 
     @staticmethod
     def __config__(obj):
-        if not isinstance(obj, dict):
-            print(f'Configs must be an object. You have {type(obj)}, which is invalid.')
-            return
-        _uuids = {
-            0: False,
-            1: True,
-            2: 'Both'
-        }.get(obj['_uuid'], 'N/A')
-        if _uuids is 'N/A': return
-        obj['_uuid'] = _uuids
+        _defaults = {'automated': False, 'interval': 30, 'length': 10, 'uuid': True, 'mixcase': False,
+                     'secret': 'rAnd0m_s3cr3t', 'verbose': True, 'persistence': {'host': 'localhost', 'port': 27017,
+                                                                                 'db': 'polysecrets',
+                                                                                 'collection': 'secrets'}}
+        bad = False
+        last_key = None
+        for key in _defaults.keys():
+            try:
+                last_key = key
+                if obj[key]:
+                    if not isinstance(obj[key], type(_defaults[key])):
+                        print(f'{obj[key]} has invalid type. You should have {type(_defaults[key])}, '
+                              f'but you have you {type(_defaults[key])}.')
+                        return bad
+            except KeyError:
+                obj[last_key] = _defaults[last_key]
+                # for key, value in _defaults.items():
+                #     obj[key] = value
+        if len(obj['persistence'].keys()) > 0:
+            for _key in _defaults['persistence'].keys():
+                if obj['persistence'][_key]:
+                    if not isinstance(obj['persistence'][_key], type(_defaults['persistence'][_key])):
+                        print(f'{obj[_key]} has invalid type. You should have {type(_defaults[_key])}, '
+                              f'but you have you {type(_defaults[_key])}.')
+                        return bad
         return obj
 
     @staticmethod
@@ -61,26 +67,38 @@ class PolySecrets:
             print('MacOS, Linux or Windows running Python 3.5 or higher is required.')
             return
 
-    @staticmethod
-    def __reqs__(secret, length):
-        if len(secret) < 10:
-            print(f'A secret of 10 characters or more is required. You secret has {len(secret)} characters.')
-            return
-        elif length < 10:
-            print(f'The length of the secret must be of 10 or more. You set your length to {length}, '
-                  f'this is invalid.')
-            return
+    def __persistence(self, secret):
+        from pymongo import MongoClient
+
+        client = None
+        if 'mongod://' in self.config['persistence']['host']:
+            client = MongoClient(self.config['persistence']['host'])
+        else:
+            client = MongoClient(host=self.config['persistence']['host'], port=self.config['persistence']['host'])
+        db = client[self.config['persistence']['db']]
+        collection = db[self.config['persistence']['collection']]
+        _prev_used_secret = collection.find_one({'secret': secret})
+        if _prev_used_secret is not None:
+            return False
+        return True
 
     def __randomization(self, arr, lst, return_val: bool = False):
         switcher = ['upper', 'lower', 'upper', 'lower', 'upper', 'lower']  # increase probability
         random_item_from_list = str(random.choice(lst))
         case_state = random.choice(switcher)
-        if self.config['mix_case']:
+        upper_case = ''
+        if self.config['mixcase']:
             if not random_item_from_list.isnumeric() and case_state == 'upper':
-                random_item_from_list.upper()
+                upper_case = random_item_from_list.upper()
         if return_val:
-            return arr.append(random_item_from_list)
-        arr.append(random_item_from_list)
+            if upper_case is not '':
+                return arr.append(upper_case)
+            else:
+                return arr.append(random_item_from_list)
+        if upper_case is not '':
+            arr.append(upper_case)
+        else:
+            arr.append(random_item_from_list)
 
     def __length_confirmation__(self, final_secret):
         if len(final_secret) < self.config['length']:
@@ -89,7 +107,7 @@ class PolySecrets:
             return str(''.join(self._sec_arr))[:self.config['length']]
         return final_secret
 
-    def __secret_generator(self, automated: bool = False):
+    def __secret_generator(self):
         for _ in range(len(self._sec_phrase)):
             self.__randomization(self._sec_arr, self._sec_phrase)
             if self.config['uuids'] is True:
@@ -99,20 +117,25 @@ class PolySecrets:
             else:
                 self.__randomization(self._sec_arr, self._one_uuid)
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
-        _final_secret = str(''.join(self._sec_arr))[:self.config['length']]
-        if not automated:
-            return self.__length_confirmation__(_final_secret)
-        environ['secret'] = self.__length_confirmation__(_final_secret)
+        _final_secret = self.__length_confirmation__(str(''.join(self._sec_arr))[:self.config['length']])
         self._sec_arr.clear()
+        return _final_secret
 
     def __automated(self):
+        _secret = None
         while self._RUN_THREAD:
             self._one_uuid = str(uuid4())[:15]
-            self.__secret_generator(True)
+            _secret = self.__secret_generator()
+            if _secret: environ['secret'] = _secret
             time.sleep(self.config['interval'])
 
     def manual(self):
-        return self.__secret_generator()
+        _INVALID_SECRET = True
+        _secret = None
+        while _INVALID_SECRET:
+            _secret = self.__persistence(self.__secret_generator())
+            if _secret: _INVALID_SECRET = False
+        return _secret
 
     def automated(self):
         self._thread.start()

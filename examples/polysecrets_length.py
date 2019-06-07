@@ -10,7 +10,11 @@ def automated_example():
     Final output: secret length of 20 characters
     :return:
     """
-    automated = PolySecrets('rAnd0m_s3cr3t', interval=5, length=20)  # default time interval is set to 30 seconds
+    config = dict(
+        length=10,
+        interval=5,
+    )
+    automated = PolySecrets(config)  # default time interval is set to 30 seconds
     try:
         automated.automated()
         time.sleep(2)  # give environment time to setup
@@ -28,7 +32,10 @@ def manual_example():
     Final output: secret length of 20 characters
     :return:
     """
-    secret = PolySecrets('rAnd0m_s3cr3t', length=20).manual()
+    config = dict(
+        length=20,
+    )
+    secret = PolySecrets(config).manual()
     print('Manual - Secret: ', secret, f'Length: {len(secret)}')  # confirm secret is available
 
 

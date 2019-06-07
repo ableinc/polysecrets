@@ -11,7 +11,12 @@ def automated_example():
     ** NOT guaranteed to be a full mix **
     :return:
     """
-    automated = PolySecrets('rAnd0m_s3cr3t', interval=5, length=20, mix_case=True)  # default time interval is set to 30 seconds
+    config = dict(
+        length=20,  # default
+        interval=5,  # default (only if you're using automated)
+        mixcase=True
+    )
+    automated = PolySecrets(config)
     try:
         automated.automated()
         time.sleep(2)  # give environment time to setup
@@ -30,7 +35,11 @@ def manual_example():
     ** NOT guaranteed to be a full mix **
     :return:
     """
-    secret = PolySecrets('rAnd0m_s3cr3t', length=20, mix_case=True).manual()
+    config = dict(
+        length=20,
+        mixcase=True
+    )
+    secret = PolySecrets(config).manual()
     print('Manual - Secret: ', secret, f' | Length: {len(secret)}')  # confirm secret is available
 
 

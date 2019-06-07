@@ -1,5 +1,14 @@
 CONTINUE_LOOP = True
 
+config = dict(
+        secret='rAnd0m_s3cr3t',  # default
+        length=10,  # default
+        interval=30,  # default (only if you're using automated)
+        uuid=True,  # default
+        mixcase=False,  # default
+        persist={}  # default
+    )
+
 
 def automated_example():
     """
@@ -13,7 +22,7 @@ def automated_example():
     import time
     from polysecrets import PolySecrets
 
-    automated = PolySecrets('rAnd0m_s3cr3t', 5)  # default time interval is set to 30 seconds
+    automated = PolySecrets(config)
     try:
         automated.automated()
         time.sleep(2)  # give environment time to setup
@@ -34,7 +43,7 @@ def manual_example():
     """
     from polysecrets import PolySecrets
 
-    secret = PolySecrets('rAnd0m_s3cr3t').manual()
+    secret = PolySecrets(config).manual()
     print('Manual - Secret: ', secret)  # confirm secret is available
 
 
