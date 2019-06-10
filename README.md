@@ -28,7 +28,10 @@ pip3.6 install --upgrade polysecrets
 ```
 # How To Use
 Polysecrets can be used manually or automated. Automated use can be provided a time (in seconds) for
-how often a new secret should be generated, the default time is set to 30 seconds. <br />
+how often a new secret should be generated, the default time is set to 30 seconds. You do not have
+to provide a secret to Polysecrets class, but you can if you'd like
+certain characters in your secret. Reminder, the secret is a collection of
+randomly ordered characters so the secret you provide will not be used entirely.<br />
 
 ** Run test.py to see a working example ** <br />
 
@@ -48,8 +51,10 @@ config = dict(
     )
 
 
-PolySecrets(config).automated()  # default time is set to 30 seconds
+automated = PolySecrets(config).automated()  # default time is set to 30 seconds
 print(environ['secret'])  # confirm secret is available
+automated.stop_automated()  # stop automation
+
 ```
 
 Manual: 
@@ -71,6 +76,8 @@ print(secret)  # confirm secret is available
 ```
 
 Refer to examples folder for all use cases.
+Also refer to 'Notes' section at the bottom of
+this README.
 
 # Options
 You can do the following with Polysecrets:
@@ -113,7 +120,7 @@ Options:
 
 # What's Next <h5>(refer to Changelog)</h5>
 1. Add persistence. This will monitor the generated secrets and make sure the newly generated secret
-has not be used previously. Possibly, only within a 24 hour period.
+has not be used previously. Add a time in which to clear the data and restart this check.
 2. NodeJS version of Polysecrets
 ________
  -- Completed June 4th, 2019 -- <br />

@@ -3,10 +3,10 @@ CONTINUE_LOOP = True
 config = dict(
         secret='rAnd0m_s3cr3t',  # default
         length=10,  # default
-        interval=30,  # default (only if you're using automated)
+        interval=5,  # default (only if you're using automated)
         uuid=True,  # default
         mixcase=False,  # default
-        persist={}  # default
+        persist={}  # or False / default: False
     )
 
 

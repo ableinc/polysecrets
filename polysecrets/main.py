@@ -1,11 +1,11 @@
 from uuid import uuid4
 import random, time, sys, threading, atexit
 from os import environ
-from pymongo import MongoClient
+from datetime import datetime
 
 
 class PolySecrets:
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, clear_on_exit: bool = False):
         """
         A completely randomized order of secrets; built with security in mind.
         :param config: Configuration object
@@ -24,7 +24,8 @@ class PolySecrets:
                                     '7', '8', '9']
         self._sec_phrase = self.config['secret']
         self._sec_arr = []
-        atexit.register(environ.clear)
+        if clear_on_exit and isinstance(clear_on_exit, bool):
+            atexit.register(environ.clear)
 
     @staticmethod
     def __config__(obj):
@@ -53,6 +54,8 @@ class PolySecrets:
                         print(f'{obj[_key]} has invalid type. You should have {type(_defaults[_key])}, '
                               f'but you have you {type(_defaults[_key])}.')
                         return bad
+        else:
+            obj['persistence'] = False
         return obj
 
     @staticmethod
@@ -74,13 +77,14 @@ class PolySecrets:
         if 'mongod://' in self.config['persistence']['host']:
             client = MongoClient(self.config['persistence']['host'])
         else:
-            client = MongoClient(host=self.config['persistence']['host'], port=self.config['persistence']['host'])
+            client = MongoClient(host=self.config['persistence']['host'], port=self.config['persistence']['port'])
         db = client[self.config['persistence']['db']]
         collection = db[self.config['persistence']['collection']]
         _prev_used_secret = collection.find_one({'secret': secret})
+        collection.insert_one({'secret': secret, 'createdAt': datetime.now()})
         if _prev_used_secret is not None:
             return False
-        return True
+        return secret
 
     def __randomization(self, arr, lst, return_val: bool = False):
         switcher = ['upper', 'lower', 'upper', 'lower', 'upper', 'lower']  # increase probability
@@ -110,9 +114,9 @@ class PolySecrets:
     def __secret_generator(self):
         for _ in range(len(self._sec_phrase)):
             self.__randomization(self._sec_arr, self._sec_phrase)
-            if self.config['uuids'] is True:
+            if self.config['uuid'] is True:
                 self.__randomization(self._sec_arr, self._one_uuid)
-            elif self.config['uuids'] is False:
+            elif self.config['uuid'] is False:
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
             else:
                 self.__randomization(self._sec_arr, self._one_uuid)
@@ -123,19 +127,30 @@ class PolySecrets:
 
     def __automated(self):
         _secret = None
+        _INVALID_SECRET = True
         while self._RUN_THREAD:
             self._one_uuid = str(uuid4())[:15]
-            _secret = self.__secret_generator()
-            if _secret: environ['secret'] = _secret
-            time.sleep(self.config['interval'])
+            if self.config['persistence'] is not False:
+                while _INVALID_SECRET:
+                    _secret = self.__persistence(self.__secret_generator())
+                    if _secret: _INVALID_SECRET = False
+                environ['secret'] = _secret
+                time.sleep(self.config['interval'])
+                _INVALID_SECRET = True
+            else:
+                environ['secret'] = self.__secret_generator()
+                time.sleep(self.config['interval'])
 
     def manual(self):
         _INVALID_SECRET = True
         _secret = None
-        while _INVALID_SECRET:
-            _secret = self.__persistence(self.__secret_generator())
-            if _secret: _INVALID_SECRET = False
-        return _secret
+        if self.config['persistence'] is not False:
+            while _INVALID_SECRET:
+                _secret = self.__persistence(self.__secret_generator())
+                if _secret: _INVALID_SECRET = False
+            return _secret
+        else:
+            return self.__secret_generator()
 
     def automated(self):
         self._thread.start()
