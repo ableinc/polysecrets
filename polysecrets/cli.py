@@ -14,14 +14,13 @@ from polysecrets.version import __version__
 @click.option('-p', '--persist', default={}, type=dict, help='Never get the same secret twice with '
                                                              'persistence from MongoDB')
 @click.version_option(version=__version__)
-def cli(secret, automated, length, interval, uuid, mixcase, persist):
-    if not isinstance(uuid, int):
-        print(f'UUID must be a integer of 0, 1, or 2. You have {uuid}, which is invalid.')
+def cli(secret, length, interval, uuid, mixcase, persist):
+    if not isinstance(uuid, bool) or uuid is not 'Both':
+        print(f'UUID must be a True, False or Both. You have {uuid}, which is invalid.')
         sys.exit()
 
     config = dict(
         secret=secret,
-        automated=automated,
         length=length,
         interval=interval,
         uuid=uuid,

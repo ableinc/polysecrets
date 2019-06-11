@@ -33,7 +33,7 @@ to provide a secret to Polysecrets class, but you can if you'd like
 certain characters in your secret. Reminder, the secret is a collection of
 randomly ordered characters so the secret you provide will not be used entirely.<br />
 
-** Run test.py to see a working example ** <br />
+** Look through examples folder ** <br />
 
 Automated (this will add the secret to your environment)
 ```python
@@ -53,7 +53,7 @@ config = dict(
 
 automated = PolySecrets(config).automated()  # default time is set to 30 seconds
 print(environ['secret'])  # confirm secret is available
-automated.stop_automated()  # stop automation
+automated.terminate()  # stop automation
 
 ```
 
@@ -77,7 +77,25 @@ print(secret)  # confirm secret is available
 
 Refer to examples folder for all use cases.
 Also refer to 'Notes' section at the bottom of
-this README.
+this README. <br />
+**If you want your environment variables cleared after Polysecrets
+terminates, do the following:** <br />
+```python
+"""
+    Right before your python project terminates, Polysecrets will clear
+    all the remaining environment variables. Note: this will clear all envs, not
+    just secrets. 
+"""
+
+from polysecrets import PolySecrets
+from os import environ
+
+config = {}  # use all defaults
+automated = PolySecrets(config=config, clear_on_exit=True).automated()
+print(environ['secret'])
+automated.terminate()  # forcibly remove envs
+```
+
 
 # Options
 You can do the following with Polysecrets:
@@ -85,7 +103,7 @@ You can do the following with Polysecrets:
 * Change time interval for new secret generation (for Automated feature)
 * Change the length of the final Polysecrets secret (refer to Notes at end of README)
 * Choose whether to generate secrets with just UUIDs, Alphanumeric characters or both
-* Choose whether to change the case of various characters in Polysecrets secret
+* Persist generated secrets to ensure the same secret isn't used twice
 
 The CLI (below) has full details of each option (except automated option)
 

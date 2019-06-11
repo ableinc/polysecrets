@@ -24,7 +24,7 @@ def automated_example():
     except KeyError as ke:
         print(f'KeyError - {ke}')
     finally:
-        automated.stop_automated()
+        automated.terminate()
 
 
 def manual_example():

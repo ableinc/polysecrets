@@ -25,11 +25,12 @@ class PolySecrets:
         self._sec_phrase = self.config['secret']
         self._sec_arr = []
         if clear_on_exit and isinstance(clear_on_exit, bool):
+            self._clear_on_exit = clear_on_exit
             atexit.register(environ.clear)
 
     @staticmethod
     def __config__(obj):
-        _defaults = {'automated': False, 'interval': 30, 'length': 10, 'uuid': True, 'mixcase': False,
+        _defaults = {'interval': 30, 'length': 10, 'uuid': True, 'mixcase': False,
                      'secret': 'rAnd0m_s3cr3t', 'verbose': True, 'persistence': {'host': 'localhost', 'port': 27017,
                                                                                  'db': 'polysecrets',
                                                                                  'collection': 'secrets'}}
@@ -153,7 +154,15 @@ class PolySecrets:
             return self.__secret_generator()
 
     def automated(self):
-        self._thread.start()
+        try:
+            self._thread.start()
+        except threading.ThreadError:
+            raise threading.ThreadError()
+        except KeyError:
+            print('Fatal error')
+            raise KeyError
 
-    def stop_automated(self):
+    def terminate(self):
         self._RUN_THREAD = False
+        if self._clear_on_exit:
+            environ.clear()

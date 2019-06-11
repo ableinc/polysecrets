@@ -1,12 +1,17 @@
+from os import environ
+import time
+from polysecrets import PolySecrets
+
+
 CONTINUE_LOOP = True
 
 config = dict(
         secret='rAnd0m_s3cr3t',  # default
         length=10,  # default
-        interval=5,  # default (only if you're using automated)
+        interval=5,  # default = 30 (only if you're using automated)
         uuid=True,  # default
         mixcase=False,  # default
-        persist={}  # or False / default: False
+        persistence={}  # or False / default: False
     )
 
 
@@ -18,9 +23,6 @@ def automated_example():
     actual application, the rest is for this example.
     :return:
     """
-    from os import environ
-    import time
-    from polysecrets import PolySecrets
 
     automated = PolySecrets(config)
     try:
@@ -32,19 +34,7 @@ def automated_example():
     except KeyError as ke:
         print(f'KeyError - {ke}')
     finally:
-        automated.stop_automated()
-
-
-def manual_example():
-    """
-    Example of Polysecrets manually. We're creating a one time secret from the provided
-    secret string.
-    :return:
-    """
-    from polysecrets import PolySecrets
-
-    secret = PolySecrets(config).manual()
-    print('Manual - Secret: ', secret)  # confirm secret is available
+        automated.terminate()
 
 
 if __name__ == '__main__':
@@ -52,4 +42,3 @@ if __name__ == '__main__':
         automated_example()
     except KeyboardInterrupt:
         CONTINUE_LOOP = False
-    manual_example()
