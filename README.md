@@ -6,6 +6,9 @@ a truly secret, randomized signing order. Instead of a hardcoded secret that can
 breach, Polysecrets, randomizes the provided string in a way that a secret produced at 8:00pm can be completely
 different from a secret produced at 8:01pm, on the same server.
 
+# Versions
+Node: https://github.com/ableinc/polysecrets-js
+
 # Requirements
 * Python 3.5+
 * Windows, OSX or Linux
@@ -81,11 +84,6 @@ this README. <br />
 **If you want your environment variables cleared after Polysecrets
 terminates, do the following:** <br />
 ```python
-"""
-    Right before your python project terminates, Polysecrets will clear
-    all the remaining environment variables. Note: this will clear all envs, not
-    just secrets. 
-"""
 
 from polysecrets import PolySecrets
 from os import environ
@@ -147,6 +145,17 @@ ________
 3. Choice of just UUIDs, alphanumeric characters or both in secret generation - Done. <br />
 
 # Changelog
+**v0.1.3** - July 11th, 2019
+* Improved code and squashed bugs
+
+**v0.1.2** - July 1st, 2019
+* Persistence added. You can now avoid duplicate secrets being generated.
+* Node version is now available. Install:
+```bash
+npm install polysecrets
+```
+* Improved code and squashed bugs
+
 **v0.1.1** - June 4th, 2019
 * Custom secret string length, with a minimum of 10 characters
 * You may mix the secret, in combination with the provided secret string, with UUIDs, alphanumeric characters or both.
@@ -168,3 +177,5 @@ guaranteed to be a part of the final secret. If you would like to use the secret
 provide I would recommend going the traditional route; add secret to your project 
 .env file and use Able's <a href="https://github.com/ableinc/pydotenvs">Py.Envs</a>
 python library.
+
+- You cannot run manual and automated in the same file. You will throw an error.

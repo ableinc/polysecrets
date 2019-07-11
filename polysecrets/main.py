@@ -1,5 +1,5 @@
 from uuid import uuid4
-import random, time, sys, threading, atexit
+import random, time, sys, threading
 from os import environ
 from datetime import datetime
 
@@ -13,6 +13,7 @@ class PolySecrets:
         self.__os__()
         # variables
         self.config = self.__config__(config)
+        self._clear_on_exit = clear_on_exit
         # automated process
         self._thread = threading.Thread(target=self.__automated, args=())
         self._thread.daemon = True
@@ -24,39 +25,29 @@ class PolySecrets:
                                     '7', '8', '9']
         self._sec_phrase = self.config['secret']
         self._sec_arr = []
-        if clear_on_exit and isinstance(clear_on_exit, bool):
-            self._clear_on_exit = clear_on_exit
-            atexit.register(environ.clear)
 
     @staticmethod
-    def __config__(obj):
-        _defaults = {'interval': 30, 'length': 10, 'uuid': True, 'mixcase': False,
-                     'secret': 'rAnd0m_s3cr3t', 'verbose': True, 'persistence': {'host': 'localhost', 'port': 27017,
-                                                                                 'db': 'polysecrets',
-                                                                                 'collection': 'secrets'}}
-        bad = False
-        last_key = None
+    def type_error_notifier(key, defaults):
+        print('TypeError with parameters: ')
+        print(f'{key} has invalid type. You should have {type(defaults[key])}, '
+              f'but you have you {type(defaults[key])}.')
+        sys.exit(1)
+
+    def __config__(self, obj):
+        _defaults = {'interval': 30, 'length': 10, 'uuid': 'True', 'mixcase': False,
+                     'secret': 'rAn!d0m_@s3cr#3t+', 'persist': {'host': 'localhost',
+                                                                'port': 27017,
+                                                                'db': 'polysecrets',
+                                                                'collection': 'secrets'}}
         for key in _defaults.keys():
             try:
-                last_key = key
-                if obj[key]:
-                    if not isinstance(obj[key], type(_defaults[key])):
-                        print(f'{obj[key]} has invalid type. You should have {type(_defaults[key])}, '
-                              f'but you have you {type(_defaults[key])}.')
-                        return bad
+                if not isinstance(obj[key], type(_defaults[key])):
+                    self.type_error_notifier(key, _defaults)
             except KeyError:
-                obj[last_key] = _defaults[last_key]
-                # for key, value in _defaults.items():
-                #     obj[key] = value
-        if len(obj['persistence'].keys()) > 0:
-            for _key in _defaults['persistence'].keys():
-                if obj['persistence'][_key]:
-                    if not isinstance(obj['persistence'][_key], type(_defaults['persistence'][_key])):
-                        print(f'{obj[_key]} has invalid type. You should have {type(_defaults[_key])}, '
-                              f'but you have you {type(_defaults[_key])}.')
-                        return bad
-        else:
-            obj['persistence'] = False
+                if key == 'persist':
+                    obj[key] = {}
+                else:
+                    obj[key] = _defaults[key]
         return obj
 
     @staticmethod
@@ -74,13 +65,12 @@ class PolySecrets:
     def __persistence(self, secret):
         from pymongo import MongoClient
 
-        client = None
-        if 'mongod://' in self.config['persistence']['host']:
-            client = MongoClient(self.config['persistence']['host'])
+        if 'mongod://' in self.config['persist']['host']:
+            client = MongoClient(self.config['persist']['host'])
         else:
-            client = MongoClient(host=self.config['persistence']['host'], port=self.config['persistence']['port'])
-        db = client[self.config['persistence']['db']]
-        collection = db[self.config['persistence']['collection']]
+            client = MongoClient(host=self.config['persist']['host'], port=self.config['persist']['port'])
+        db = client[self.config['persist']['db']]
+        collection = db[self.config['persist']['collection']]
         _prev_used_secret = collection.find_one({'secret': secret})
         collection.insert_one({'secret': secret, 'createdAt': datetime.now()})
         if _prev_used_secret is not None:
@@ -95,12 +85,9 @@ class PolySecrets:
         if self.config['mixcase']:
             if not random_item_from_list.isnumeric() and case_state == 'upper':
                 upper_case = random_item_from_list.upper()
-        if return_val:
-            if upper_case is not '':
-                return arr.append(upper_case)
-            else:
-                return arr.append(random_item_from_list)
         if upper_case is not '':
+            if return_val:
+                return arr.append(upper_case)
             arr.append(upper_case)
         else:
             arr.append(random_item_from_list)
@@ -115,9 +102,9 @@ class PolySecrets:
     def __secret_generator(self):
         for _ in range(len(self._sec_phrase)):
             self.__randomization(self._sec_arr, self._sec_phrase)
-            if self.config['uuid'] is True:
+            if self.config['uuid'] is 'True':
                 self.__randomization(self._sec_arr, self._one_uuid)
-            elif self.config['uuid'] is False:
+            elif self.config['uuid'] is 'False':
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
             else:
                 self.__randomization(self._sec_arr, self._one_uuid)
@@ -131,7 +118,7 @@ class PolySecrets:
         _INVALID_SECRET = True
         while self._RUN_THREAD:
             self._one_uuid = str(uuid4())[:15]
-            if self.config['persistence'] is not False:
+            if len(self.config['persist']) > 0:
                 while _INVALID_SECRET:
                     _secret = self.__persistence(self.__secret_generator())
                     if _secret: _INVALID_SECRET = False
@@ -145,7 +132,7 @@ class PolySecrets:
     def manual(self):
         _INVALID_SECRET = True
         _secret = None
-        if self.config['persistence'] is not False:
+        if len(self.config['persist']) > 0:
             while _INVALID_SECRET:
                 _secret = self.__persistence(self.__secret_generator())
                 if _secret: _INVALID_SECRET = False
@@ -159,10 +146,10 @@ class PolySecrets:
         except threading.ThreadError:
             raise threading.ThreadError()
         except KeyError:
-            print('Fatal error')
-            raise KeyError
+            print('Fatal error during thread.')
+            sys.exit(1)
 
     def terminate(self):
         self._RUN_THREAD = False
         if self._clear_on_exit:
-            environ.clear()
+            environ.pop('secret')
