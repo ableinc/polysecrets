@@ -88,6 +88,7 @@ Options:
 * Certificate Signing
 * Hashing
 * Various scenarios of Cryptography
+* Password generater
 
 # What's Next <h5>(refer to Changelog)</h5>
 1. Add persistence. This will monitor the generated secrets and make sure the newly generated secret
