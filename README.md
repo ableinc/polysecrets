@@ -6,6 +6,8 @@ a truly secret, randomized signing order. Instead of a hardcoded secret that can
 breach, Polysecrets, randomizes the provided string in a way that a secret produced at 8:00pm can be completely
 different from a secret produced at 8:01pm, on the same server.
 
+**Note:** NodeJS version located here: [PolysecretsJS](https://www.npmjs.com/package/polysecrets)
+
 # Requirements
 * Python 3.5+
 * Windows, OSX or Linux
