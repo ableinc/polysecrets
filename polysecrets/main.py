@@ -1,5 +1,5 @@
 from uuid import uuid4
-import random, time, sys, threading
+import random, time, sys, threading, platform
 from os import environ
 from datetime import datetime
 
@@ -11,6 +11,10 @@ class PolySecrets:
         :param config: Configuration object
         """
         self.__os__()
+        # Alpha
+        self._alpha_numeric_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+                                    'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9']
         # variables
         self.config = self.__config__(config)
         self._clear_on_exit = clear_on_exit
@@ -20,34 +24,26 @@ class PolySecrets:
         self._RUN_THREAD = True
         # crypto secret
         self._one_uuid = str(uuid4())[:15]
-        self._alpha_numeric_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-                                    'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6',
-                                    '7', '8', '9']
         self._sec_phrase = self.config['secret']
         self._sec_arr = []
 
     @staticmethod
     def type_error_notifier(key, defaults):
         print('TypeError with parameters: ')
-        print(f'{key} has invalid type. You should have {type(defaults[key])}, '
-              f'but you have you {type(defaults[key])}.')
+        print(f'{key} has invalid type. You should have {defaults[key]}, '
+              f'but you have you {defaults[key]}.')
         sys.exit(1)
 
     def __config__(self, obj):
-        _defaults = {'interval': 30, 'length': 10, 'uuid': 'True', 'mixcase': False,
-                     'secret': 'rAn!d0m_@s3cr#3t+', 'persist': {'host': 'localhost',
-                                                                'port': 27017,
-                                                                'db': 'polysecrets',
-                                                                'collection': 'secrets'}}
-        for key in _defaults.keys():
-            try:
-                if not isinstance(obj[key], type(_defaults[key])):
-                    self.type_error_notifier(key, _defaults)
-            except KeyError:
-                if key == 'persist':
-                    obj[key] = {}
-                else:
-                    obj[key] = _defaults[key]
+        if obj['symbols'] == True:
+            self._alpha_numeric_list.append(['!', '@', '#', '$', '_', '+', '-'])
+        
+        _defaults = {'interval': int, 'length': int, 'uuid': str, 'mixcase': bool,
+                     'secret': str, 'persist': bool, 'symbols': bool}
+        ignore_keys = []
+        for key in obj.keys():
+            if not isinstance(obj[key], _defaults[key]):
+                self.type_error_notifier(key, _defaults)
         return obj
 
     @staticmethod
@@ -59,23 +55,40 @@ class PolySecrets:
         }
         platform_version = platforms.get(sys.platform, 'N/A')
         if platform_version == 'N/A' or not sys.version_info >= platform_version:
-            print('MacOS, Linux or Windows running Python 3.5 or higher is required.')
-            return
+            print('MacOS, Linux or Windows running Python 3.5 or higher is required. Your Python version: ', platform.python_version())
+            sys.exit(100)
 
     def __persistence(self, secret):
         from pymongo import MongoClient
-
-        if 'mongod://' in self.config['persist']['host']:
-            client = MongoClient(self.config['persist']['host'])
-        else:
-            client = MongoClient(host=self.config['persist']['host'], port=self.config['persist']['port'])
-        db = client[self.config['persist']['db']]
-        collection = db[self.config['persist']['collection']]
-        _prev_used_secret = collection.find_one({'secret': secret})
-        collection.insert_one({'secret': secret, 'createdAt': datetime.now()})
-        if _prev_used_secret is not None:
-            return False
-        return secret
+        from pydotenvs import load_env
+        load_env()
+        try:
+            persist = {'host': environ['HOST'],
+                        'port': environ['PORT'] if environ['PORT'] != '' else 27017,
+                        'db': environ['DB_NAME'] if environ['DB_NAME'] != '' else 'polysecrets',
+                        'collection': environ['secrets'] if environ['secrets'] != '' else 'secrets',
+                        'user': environ['DB_USER'],
+                        'pass': environ['DB_PASS'],
+                        'authSource': environ['AUTH_SOURCE'] if environ['AUTH_SOURCE'] != '' else 'admin'
+                        }
+            if 'mongod://' in persist['host']:
+                client = MongoClient(persist['host'])
+            else:
+                client = MongoClient(host=persist['host'],
+                                    port=persist['port'],
+                                    username=persist['user'],
+                                    password=persist['pass'],
+                                    authSource=persist['authSource'])
+            db = client[persist['db']]
+            collection = db[persist['collection']]
+            _prev_used_secret = collection.find_one({'secret': secret})
+            if _prev_used_secret is not None:
+                return False
+            collection.insert_one({'secret': secret, 'createdAt': datetime.now()})
+            return secret
+        except KeyError as ke:
+            print('Unable to parse .env file for MongoDB credentials. Error: ', ke, 'environment variable could not be found.')
+            sys.exit(200)
 
     def __randomization(self, arr, lst, return_val: bool = False):
         switcher = ['upper', 'lower', 'upper', 'lower', 'upper', 'lower']  # increase probability
@@ -96,15 +109,15 @@ class PolySecrets:
         if len(final_secret) < self.config['length']:
             for _ in range(self.config['length'] - len(final_secret)):
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
-            return str(''.join(self._sec_arr))[:self.config['length']]
+            return str(''.join(self._sec_arr))[0:self.config['length']]
         return final_secret
 
     def __secret_generator(self):
         for _ in range(len(self._sec_phrase)):
             self.__randomization(self._sec_arr, self._sec_phrase)
-            if self.config['uuid'] is 'True':
+            if self.config['uuid'] is 'yes':
                 self.__randomization(self._sec_arr, self._one_uuid)
-            elif self.config['uuid'] is 'False':
+            elif self.config['uuid'] is 'no':
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
             else:
                 self.__randomization(self._sec_arr, self._one_uuid)
@@ -118,7 +131,7 @@ class PolySecrets:
         _INVALID_SECRET = True
         while self._RUN_THREAD:
             self._one_uuid = str(uuid4())[:15]
-            if len(self.config['persist']) > 0:
+            if self.config['persist'] == True:
                 while _INVALID_SECRET:
                     _secret = self.__persistence(self.__secret_generator())
                     if _secret: _INVALID_SECRET = False
@@ -132,12 +145,15 @@ class PolySecrets:
     def manual(self):
         _INVALID_SECRET = True
         _secret = None
-        if len(self.config['persist']) > 0:
-            while _INVALID_SECRET:
-                _secret = self.__persistence(self.__secret_generator())
-                if _secret: _INVALID_SECRET = False
-            return _secret
-        else:
+        try:
+            if self.config['persist'] == True:
+                while _INVALID_SECRET:
+                    _secret = self.__persistence(self.__secret_generator())
+                    if _secret: _INVALID_SECRET = False
+                return _secret
+            else:
+                raise KeyError('Invalid key')
+        except KeyError:
             return self.__secret_generator()
 
     def automated(self):

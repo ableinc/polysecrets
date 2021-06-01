@@ -6,8 +6,12 @@ a truly secret, randomized signing order. Instead of a hardcoded secret that can
 breach, Polysecrets, randomizes the provided string in a way that a secret produced at 8:00pm can be completely
 different from a secret produced at 8:01pm, on the same server.
 
-# Versions
-Node: https://github.com/ableinc/polysecrets-js
+# Libraries - v0.1.4
+NodeJS: https://www.npmjs.com/package/polysecrets
+Python: https://pypi.org/project/polysecrets/
+
+# Author
+Let's connect on LinkedIn: https://www.linkedin.com/in/jaylen-douglas-292b82a6/
 
 # Requirements
 * Python 3.5+
@@ -19,15 +23,15 @@ Locally
 git clone https://github.com/ableinc/polysecrets.git
 cd polysecrets
 
-python3.6 -m pip install --upgrade .
+python -m pip install --upgrade .
             or 
-pip3.6 install --upgrade .
+pip install --upgrade .
 ```
 PyPi (Pip)
 ```bash
-python3.6 -m pip install --upgrade polysecrets
+python -m pip install --upgrade polysecrets
             or
-pip3.6 install --upgrade polysecrets
+pip install --upgrade polysecrets
 ```
 # How To Use
 Polysecrets can be used manually or automated. Automated use can be provided a time (in seconds) for
@@ -45,12 +49,13 @@ from polysecrets import PolySecrets
 
 
 config = dict(
-        secret='rAnd0m_s3cr3t',  # default
+        secret='rAnd0m_s3cr3t',  # or use default
         length=10,  # default
         interval=30,  # default (only if you're using automated)
-        uuid=True,  # default
+        uuid='yes',  # default
         mixcase=False,  # default
-        persist={}  # default
+        persist=False,  # default
+        symbols=False
     )
 
 
@@ -65,12 +70,13 @@ Manual:
 from polysecrets import PolySecrets
 
 config = dict(
-        secret='rAnd0m_s3cr3t',  # default
+        secret='rAnd0m_s3cr3t',  # or use default
         length=10,  # default
         interval=30,  # default (only if you're using automated)
-        uuid=True,  # default
+        uuid='yes',  # default
         mixcase=False,  # default
-        persist={}  # default
+        persist=False,  # default
+        symbols=False
     )
 
 
@@ -93,7 +99,24 @@ automated = PolySecrets(config=config, clear_on_exit=True).automated()
 print(environ['secret'])
 automated.terminate()  # forcibly remove envs
 ```
+# Persistence
+You can you use the persistence feature to keeps record
+of the secrets produced, and verifies that no secret has been duplicated. You will need to have a .env file with the MongoDB credentials inside. An example of the .env file is below:
+```text
+HOST=localhost
+#PORT=27017
+USER=root
+PASS=r00tp@ssw0rD
+#DB_NAME=polysecrets
+#COLLECTION=secrets
+#AUTH_SOURCE=admin
 
+# Host URI Example
+HOST=mongodb://user:password@example.com/?authSource=the_database&authMechanism=SCRAM-SHA-1
+``` 
+Notes:
+* ***All variables with the '#' prefix are optional; defaults will be assigned.***
+* ***Host variable can also be a full MongoDB URI. If so, it will ignore all other variables.***
 
 # Options
 You can do the following with Polysecrets:
@@ -106,23 +129,29 @@ You can do the following with Polysecrets:
 The CLI (below) has full details of each option (except automated option)
 
 # CLI
-You can use Polysecrets as a command line tool. CLI does not provided automated feature. <br />
+You can use Polysecrets as a command line tool. CLI does not provided automated feature. If secret is left out, it will default to a random string built into the Polysecrets. An example is below: <br />
 ```bash
-polysecrets -s -l 20 
+polysecrets --length 20 go 
 ```
-
+Help menu
 ```bash 
-Usage: polysecrets [OPTIONS]
+Usage: polysecrets [OPTIONS] GO
 
 Options:
-  -s, --secret TEXT       The secret string  [required]
+  -s, --secret TEXT       The secret string
   -l, --length INTEGER    Length of the secret. Secret has a minimum length of
                           10
-  -u, --uuid INTEGER      Whether to use UUIDs or Alphanumeric characters for
-                          secret generation
+  -i, --interval INTEGER  How frequently should a new secret be generated (in
+                          seconds)
+  -u, --uuid TEXT         Whether to use UUIDs or Alphanumeric characters for
+                          secret generation - yes, no, both
   -m, --mixcase BOOLEAN   Decide whether or not to mix the case of
                           alphacharacters in secret string
-  -p, --persist           Never get the same secret twice with persistence from MongoDB
+  -p, --persist DICT      Never get the same secret twice with persistence
+                          from MongoDB
+  --symbols BOOLEAN       Whether or not to use special characters in secret.
+                          This will only increase the probability of appending
+                          a special character.
   --version               Show the version and exit.
   --help                  Show this message and exit.
 
@@ -135,16 +164,14 @@ Options:
 * Various scenarios of Cryptography
 
 # What's Next <h5>(refer to Changelog)</h5>
-1. Add persistence. This will monitor the generated secrets and make sure the newly generated secret
-has not be used previously. Add a time in which to clear the data and restart this check.
-2. NodeJS version of Polysecrets
-________
- -- Completed June 4th, 2019 -- <br />
-1. Randomized upper and lower case alpha characters in secret string - Done. <br />
-2. Custom secret string length - Done. <br />
-3. Choice of just UUIDs, alphanumeric characters or both in secret generation - Done. <br />
+If you have found a bug or would like to create new features, make a PR!
 
 # Changelog
+**v0.1.4** - June 1st, 2021
+* Improved CLI tool
+* Fixed persistence bug
+* Simplified defaults
+
 **v0.1.3** - July 11th, 2019
 * Improved code and squashed bugs
 

@@ -21,7 +21,8 @@ setuptools.setup(
         polysecrets=polysecrets.cli:cli
     ''',
     install_requires=[
-          'Click>=7.0'
+          'Click>=7.0',
+          'pydotenvs'
     ],
     classifiers=[
         "Programming Language :: Python :: 3.5",
