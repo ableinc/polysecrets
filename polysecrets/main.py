@@ -1,53 +1,50 @@
 from uuid import uuid4
-import random, time, sys, threading
+import random, time, sys, threading, platform
 from os import environ
+from datetime import datetime
 
 
 class PolySecrets:
-    def __init__(self, secret: str, interval: int = 30, length: int = 10, uuids: int = 1, mix_case: bool = False):
+    def __init__(self, config: dict, clear_on_exit: bool = False):
         """
         A completely randomized order of secrets; built with security in mind.
-        :param secret: The user provided secret string
-        :param interval: The time interval in which to generate a new secret; for the automated process
-        :param length: The length of the final secret
-        :param uuids: Determine if secret generation should contain UUIDs, Alphanumeric characters or both
-        :param mix_case: Switch the case of string between lower or upper case
+        :param config: Configuration object
         """
         self.__os__()
-        self.__reqs__(secret, length)
+        # Alpha
+        self._alpha_numeric_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+                                    'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6',
+                                    '7', '8', '9']
         # variables
-        self.secret = secret
-        self.interval = interval
-        self.length = length
-        self.uuids = self.__config__(uuids)
-        self.mix_case = mix_case
-        self.CLI = False
+        self.config = self.__config__(config)
+        self._clear_on_exit = clear_on_exit
         # automated process
         self._thread = threading.Thread(target=self.__automated, args=())
         self._thread.daemon = True
         self._RUN_THREAD = True
         # crypto secret
         self._one_uuid = str(uuid4())[:15]
-        self._alpha_numeric_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-                                    'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6',
-                                    '7', '8', '9']
-        self._sec_phrase = self.secret
+        self._sec_phrase = self.config['secret']
         self._sec_arr = []
 
     @staticmethod
-    def __config__(obj):
-        if not isinstance(obj, int):
-            print(f'UUID must be a integer value of 0, 1, or 2. You have {obj}, which is invalid.')
-            return
-        elif obj == 0:
-            return False
-        elif obj == 1:
-            return True
-        elif obj == 2:
-            return 'Both'
-        else:
-            print(f'UUID must be a integer value of 0, 1, or 2. You have {obj}, which is invalid.')
-            return
+    def type_error_notifier(key, defaults):
+        print('TypeError with parameters: ')
+        print(f'{key} has invalid type. You should have {defaults[key]}, '
+              f'but you have you {defaults[key]}.')
+        sys.exit(1)
+
+    def __config__(self, obj):
+        if obj['symbols'] == True:
+            self._alpha_numeric_list.append(['!', '@', '#', '$', '_', '+', '-'])
+        
+        _defaults = {'interval': int, 'length': int, 'uuid': str, 'mixcase': bool,
+                     'secret': str, 'persist': bool, 'symbols': bool}
+        ignore_keys = []
+        for key in obj.keys():
+            if not isinstance(obj[key], _defaults[key]):
+                self.type_error_notifier(key, _defaults)
+        return obj
 
     @staticmethod
     def __os__():
@@ -58,66 +55,117 @@ class PolySecrets:
         }
         platform_version = platforms.get(sys.platform, 'N/A')
         if platform_version == 'N/A' or not sys.version_info >= platform_version:
-            print('MacOS, Linux or Windows running Python 3.5 or higher is required.')
-            return
+            print('MacOS, Linux or Windows running Python 3.5 or higher is required. Your Python version: ', platform.python_version())
+            sys.exit(100)
 
-    @staticmethod
-    def __reqs__(secret, length):
-        if len(secret) < 10:
-            print(f'A secret of 10 characters or more is required. You secret has {len(secret)} characters.')
-            return
-        elif length < 10:
-            print(f'The length of the secret must be of 10 or more. You set your length to {length}, '
-                  f'this is invalid.')
-            return
+    def __persistence(self, secret):
+        from pymongo import MongoClient
+        from pydotenvs import load_env
+        load_env()
+        try:
+            persist = {'host': environ['HOST'],
+                        'port': environ['PORT'] if environ['PORT'] != '' else 27017,
+                        'db': environ['DB_NAME'] if environ['DB_NAME'] != '' else 'polysecrets',
+                        'collection': environ['secrets'] if environ['secrets'] != '' else 'secrets',
+                        'user': environ['DB_USER'],
+                        'pass': environ['DB_PASS'],
+                        'authSource': environ['AUTH_SOURCE'] if environ['AUTH_SOURCE'] != '' else 'admin'
+                        }
+            if 'mongod://' in persist['host']:
+                client = MongoClient(persist['host'])
+            else:
+                client = MongoClient(host=persist['host'],
+                                    port=persist['port'],
+                                    username=persist['user'],
+                                    password=persist['pass'],
+                                    authSource=persist['authSource'])
+            db = client[persist['db']]
+            collection = db[persist['collection']]
+            _prev_used_secret = collection.find_one({'secret': secret})
+            if _prev_used_secret is not None:
+                return False
+            collection.insert_one({'secret': secret, 'createdAt': datetime.now()})
+            return secret
+        except KeyError as ke:
+            print('Unable to parse .env file for MongoDB credentials. Error: ', ke, 'environment variable could not be found.')
+            sys.exit(200)
 
     def __randomization(self, arr, lst, return_val: bool = False):
         switcher = ['upper', 'lower', 'upper', 'lower', 'upper', 'lower']  # increase probability
         random_item_from_list = str(random.choice(lst))
         case_state = random.choice(switcher)
-        if self.mix_case:
+        upper_case = ''
+        if self.config['mixcase']:
             if not random_item_from_list.isnumeric() and case_state == 'upper':
-                random_item_from_list.upper()
-        if return_val:
-            return arr.append(random_item_from_list)
-        arr.append(random_item_from_list)
+                upper_case = random_item_from_list.upper()
+        if upper_case is not '':
+            if return_val:
+                return arr.append(upper_case)
+            arr.append(upper_case)
+        else:
+            arr.append(random_item_from_list)
 
     def __length_confirmation__(self, final_secret):
-        if len(final_secret) < self.length:
-            for _ in range(self.length - len(final_secret)):
+        if len(final_secret) < self.config['length']:
+            for _ in range(self.config['length'] - len(final_secret)):
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
-            return str(''.join(self._sec_arr))[:self.length]
+            return str(''.join(self._sec_arr))[0:self.config['length']]
         return final_secret
 
-    def __secret_generator(self, automated: bool = False):
+    def __secret_generator(self):
         for _ in range(len(self._sec_phrase)):
             self.__randomization(self._sec_arr, self._sec_phrase)
-            if self.uuids is True:
+            if self.config['uuid'] is 'yes':
                 self.__randomization(self._sec_arr, self._one_uuid)
-            elif self.uuids is False:
+            elif self.config['uuid'] is 'no':
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
             else:
                 self.__randomization(self._sec_arr, self._one_uuid)
                 self.__randomization(self._sec_arr, self._alpha_numeric_list)
-        _final_secret = str(''.join(self._sec_arr))[:self.length]
-        if not automated:
-            return self.__length_confirmation__(_final_secret)
-        environ['secret'] = self.__length_confirmation__(_final_secret)
+        _final_secret = self.__length_confirmation__(str(''.join(self._sec_arr))[:self.config['length']])
         self._sec_arr.clear()
+        return _final_secret
 
     def __automated(self):
+        _secret = None
+        _INVALID_SECRET = True
         while self._RUN_THREAD:
             self._one_uuid = str(uuid4())[:15]
-            self.__secret_generator(True)
-            if self.CLI:
-                print('Secret: ', environ['secret'])
-            time.sleep(self.interval)
+            if self.config['persist'] == True:
+                while _INVALID_SECRET:
+                    _secret = self.__persistence(self.__secret_generator())
+                    if _secret: _INVALID_SECRET = False
+                environ['secret'] = _secret
+                time.sleep(self.config['interval'])
+                _INVALID_SECRET = True
+            else:
+                environ['secret'] = self.__secret_generator()
+                time.sleep(self.config['interval'])
 
     def manual(self):
-        return self.__secret_generator()
+        _INVALID_SECRET = True
+        _secret = None
+        try:
+            if self.config['persist'] == True:
+                while _INVALID_SECRET:
+                    _secret = self.__persistence(self.__secret_generator())
+                    if _secret: _INVALID_SECRET = False
+                return _secret
+            else:
+                raise KeyError('Invalid key')
+        except KeyError:
+            return self.__secret_generator()
 
     def automated(self):
-        self._thread.start()
+        try:
+            self._thread.start()
+        except threading.ThreadError:
+            raise threading.ThreadError()
+        except KeyError:
+            print('Fatal error during thread.')
+            sys.exit(1)
 
-    def stop_automated(self):
+    def terminate(self):
         self._RUN_THREAD = False
+        if self._clear_on_exit:
+            environ.pop('secret')

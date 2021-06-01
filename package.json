@@ -1,0 +1,21 @@
+{
+    "name": "polysecrets",
+    "version": "0.1.4",
+    "description": "A completely randomized order of secrets with security in mind.",
+    "main": "polysecrets/main.py",
+    "scripts": {
+        "start": "python polysecrets/cli.py go",
+        "test": "echo \"No test available\"",
+        "build": "python setup.py sdist bdist_wheel",
+        "health": "twine check dist/*",
+        "upload": "twine upload dist/*"
+    },
+    "author": "AbleInc - Jaylen Douglas",
+    "license": "ISC",
+    "dependencies": {
+        "Click": "7.0",
+        "pymongo": "3.10.1",
+        "pydotenvs": "0.1.4"
+    },
+    "devDependencies": {}
+}
